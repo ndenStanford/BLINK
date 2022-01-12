@@ -8,13 +8,14 @@ import blink.main_dense as main_dense
 import argparse
 import torch
 import numpy as np 
+import json 
 
 import time
 from nltk.tokenize import sent_tokenize, word_tokenize
 #from utils import * 
 
 
-models_path = "models/" # the path where you stored the BLINK models
+models_path = "../models/" # the path where you stored the BLINK models
 
 config = {
     "test_entities": None,
@@ -33,10 +34,39 @@ config = {
 
 args = argparse.Namespace(**config)
 
+"""
+(
+    candidate_encoding,
+    title2id,
+    id2title,
+    id2text,
+    wikipedia_id2local_id,
+    faiss_indexer,
+) = main_dense._load_candidates(
+    args.entity_catalogue, 
+    args.entity_encoding, 
+    faiss_index=getattr(args, 'faiss_index', None), 
+    index_path=getattr(args, 'index_path' , None),
+    logger=None,
+)
+
+
+with open(args.biencoder_config) as json_file:
+    biencoder_params = json.load(json_file)
+    biencoder_params["path_to_model"] = args.biencoder_model
+#biencoder = load_biencoder(biencoder_params)
+biencoder = torch.jit.load('biencoder.pt')
+
+crossencoder = None 
+crossencoder_params = None 
+
+models = biencoder, biencoder_params, crossencoder, crossencoder_params, candidate_encoding, title2id, id2title, id2text, wikipedia_id2local_id, faiss_indexer
+"""
 models = main_dense.load_models(args, logger=None)
 
-#biencoder, biencoder_params, crossencoder, crossencoder_params, candidate_encoding, title2id, id2title, id2text, wikipedia_id2local_id, faiss_indexer = models
+biencoder, biencoder_params, crossencoder, crossencoder_params, candidate_encoding, title2id, id2title, id2text, wikipedia_id2local_id, faiss_indexer = models
 
+#https://github.com/pytorch/pytorch/issues/41277
 
 data_to_link = [ {
                     "id": 0,

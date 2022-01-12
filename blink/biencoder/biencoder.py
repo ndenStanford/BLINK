@@ -146,7 +146,7 @@ class BiEncoderRanker(torch.nn.Module):
 
     # Score candidates given context input and label input
     # If cand_encs is provided (pre-computed), cand_ves is ignored 
-    @profile
+    #@profile
     def score_candidate(
         self,
         text_vecs,
@@ -184,6 +184,25 @@ class BiEncoderRanker(torch.nn.Module):
             scores = torch.bmm(embedding_ctxt, embedding_cands)  # batchsize x 1 x 1
             scores = torch.squeeze(scores)
             return scores
+
+
+    def score_candidate_inference(
+        self,
+        text_vecs,
+        cand_encs,  # pre-computed candidate encoding.
+    ):
+        # Encode contexts first
+        token_idx_ctxt, segment_idx_ctxt, mask_ctxt = to_bert_input(
+            text_vecs, self.NULL_IDX
+        )
+        embedding_ctxt, _ = self.model(
+            token_idx_ctxt, segment_idx_ctxt, mask_ctxt, None, None, None
+        )
+
+        # Candidate encoding is given, do not need to re-compute
+        # Directly return the score of context encoding and candidate encoding
+        return embedding_ctxt.mm(cand_encs.t())
+
 
     # label_input -- negatives provided
     # If label_input is None, train on in-batch negatives

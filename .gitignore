@@ -263,3 +263,7 @@ dmypy.json
 .pyre/
 
 # End of https://www.gitignore.io/api/c++,java,linux,macos,python
+
+*.pt
+torchserve_sandbox/*.pt
+torchserve_sandbox/model_store/*.mar

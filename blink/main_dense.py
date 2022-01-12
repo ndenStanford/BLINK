@@ -45,6 +45,10 @@ def find_candidates(mention):
 
     mention_detector = MentionDetectionBase(base_url, wiki_version)
     cands = mention_detector.wiki_db.wiki(mention, "wiki")
+
+    if cands is None: 
+        return None
+
     cands_cleaned = [c[0].replace("_", " ") for c in cands]
     return cands_cleaned
 
@@ -242,7 +246,7 @@ def _process_biencoder_dataloader(samples, tokenizer, biencoder_params):
     )
     return dataloader
 
-@profile
+#@profile
 def _run_biencoder(biencoder, dataloader, candidate_encoding, top_k=100, indexer=None):
     
     ## maanually hardcode the device
@@ -263,7 +267,8 @@ def _run_biencoder(biencoder, dataloader, candidate_encoding, top_k=100, indexer
                 context_encoding = np.ascontiguousarray(context_encoding)
                 scores, indicies = indexer.search_knn(context_encoding, top_k)
             else:
-                scores = biencoder.score_candidate(
+                scores = biencoder.score_candidate_inference(
+                #scores = biencoder.score_candidate(
                     #context_input, None, cand_encs=candidate_encoding  # .to(device)
                     context_input.to(device), None, cand_encs=candidate_encoding.to(device)
                 )
@@ -289,7 +294,7 @@ def _process_crossencoder_dataloader(context_input, label_input, crossencoder_pa
     )
     return dataloader
 
-
+#@profile
 def _run_crossencoder(crossencoder, dataloader, logger, context_len, device="cuda"):
     crossencoder.model.eval()
     accuracy = 0.0
@@ -359,7 +364,7 @@ def load_models(args, logger=None):
         faiss_indexer,
     )
 
-
+#@profile
 def run(
     args,
     logger,
@@ -449,8 +454,10 @@ def run(
             for sample in samples:
                 mention = sample['mention']
                 candidates = find_candidates(mention)
-                candidate_ids = [title2id.get(c) for c in candidates]
-                samples_pre_candidate_ids.update(candidate_ids)
+
+                if candidates is not None:
+                    candidate_ids = [title2id.get(c) for c in candidates]
+                    samples_pre_candidate_ids.update(candidate_ids)
 
             samples_pre_candidate_ids_list = list(samples_pre_candidate_ids)
             candidate_encoding = candidate_encoding[list(samples_pre_candidate_ids),:]
