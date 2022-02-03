@@ -17,7 +17,7 @@ from termcolor import colored
 
 import blink.ner as NER
 from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
-from blink.biencoder.biencoder import BiEncoderRanker, load_biencoder
+from blink.biencoder.biencoder import BiEncoderRanker, load_biencoder, load_biencoder_inference
 from blink.crossencoder.crossencoder import CrossEncoderRanker, load_crossencoder
 from blink.biencoder.data_process import (
     process_mention_data,
@@ -26,9 +26,10 @@ from blink.biencoder.data_process import (
 import blink.candidate_ranking.utils as utils
 from blink.crossencoder.train_cross import modify, evaluate
 from blink.crossencoder.data_process import prepare_crossencoder_data
-from blink.indexer.faiss_indexer import DenseFlatIndexer, DenseHNSWFlatIndexer
+#from blink.indexer.faiss_indexer import DenseFlatIndexer, DenseHNSWFlatIndexer
 
 from REL.mention_detection_base import MentionDetectionBase
+from pytorch_transformers.tokenization_bert import BertTokenizer
 
 HIGHLIGHTS = [
     "on_red",
@@ -267,11 +268,26 @@ def _run_biencoder(biencoder, dataloader, candidate_encoding, top_k=100, indexer
                 context_encoding = np.ascontiguousarray(context_encoding)
                 scores, indicies = indexer.search_knn(context_encoding, top_k)
             else:
+                
+                scores = biencoder(
+                    #context_input, None, cand_encs=candidate_encoding  # .to(device)
+                    context_input.to(device), cand_encs=candidate_encoding.to(device)
+                )
+                
+
+                """
                 scores = biencoder.score_candidate_inference(
-                #scores = biencoder.score_candidate(
+                    #context_input, None, cand_encs=candidate_encoding  # .to(device)
+                    context_input.to(device), cand_encs=candidate_encoding.to(device)
+                )
+                """
+
+                """
+                scores = biencoder.score_candidate(
                     #context_input, None, cand_encs=candidate_encoding  # .to(device)
                     context_input.to(device), None, cand_encs=candidate_encoding.to(device)
                 )
+                """
 
                 top_k = min(len(scores), top_k)
                 scores, indicies = scores.topk(top_k)
@@ -320,7 +336,8 @@ def load_models(args, logger=None):
     with open(args.biencoder_config) as json_file:
         biencoder_params = json.load(json_file)
         biencoder_params["path_to_model"] = args.biencoder_model
-    biencoder = load_biencoder(biencoder_params)
+    #biencoder = load_biencoder(biencoder_params)
+    biencoder = load_biencoder_inference(biencoder_params)
 
     crossencoder = None
     crossencoder_params = None
@@ -441,14 +458,27 @@ def run(
             or samples[0]["label_id"] < 0
         )
 
+
+        # separate tokenizer out of binencoder
+        tokenizer = BertTokenizer.from_pretrained(
+            biencoder_params["bert_model"], do_lower_case=biencoder_params["lowercase"]
+        )
+
         # prepare the data for biencoder
         if logger:
             logger.info("preparing data for biencoder")
+
+        """    
         dataloader = _process_biencoder_dataloader(
             samples, biencoder.tokenizer, biencoder_params
         )
+        """
+        dataloader = _process_biencoder_dataloader(
+            samples, tokenizer, biencoder_params
+        )
 
         # pre-filter candidate
+        mention_found = []
         if REL_filter:
             samples_pre_candidate_ids = set()
             for sample in samples:
@@ -458,9 +488,12 @@ def run(
                 if candidates is not None:
                     candidate_ids = [title2id.get(c) for c in candidates]
                     samples_pre_candidate_ids.update(candidate_ids)
+                    mention_found += [True]
+                else:
+                    mention_found += [False]
 
             samples_pre_candidate_ids_list = list(samples_pre_candidate_ids)
-            candidate_encoding = candidate_encoding[list(samples_pre_candidate_ids),:]
+            candidate_encoding = candidate_encoding[list(filter(None, samples_pre_candidate_ids)),:]
             samples_pre_candidate_ids_dict = dict([(i, samples_pre_candidate_ids_list[i]) for i in range(len(samples_pre_candidate_ids_list))])
 
         # run biencoder
@@ -540,6 +573,7 @@ def run(
                     len(samples),
                     predictions,
                     scores,
+                    mention_found
                 )
 
         # prepare crossencoder data

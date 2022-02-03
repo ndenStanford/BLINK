@@ -5,6 +5,7 @@ dname = os.path.dirname(abspath)
 os.chdir(dname)
 
 import blink.main_dense as main_dense
+from blink.biencoder.biencoder import *
 import argparse
 import torch
 import numpy as np 
@@ -12,10 +13,10 @@ import json
 
 import time
 from nltk.tokenize import sent_tokenize, word_tokenize
-#from utils import * 
+from utils import * 
 
 
-models_path = "../models/" # the path where you stored the BLINK models
+models_path = "model_store/"#"/home/ubuntu/BLINK/models/" # the path where you stored the BLINK models
 
 config = {
     "test_entities": None,
@@ -33,6 +34,22 @@ config = {
 }
 
 args = argparse.Namespace(**config)
+
+data_to_link = generate_complex_query()
+
+models = main_dense.load_models(args, logger=None)
+
+_, _, _, _, _, predictions, scores, mention_found = main_dense.run(args, None, *models, test_data=data_to_link, REL_filter=True)
+
+entity_linking_dict = dict()
+for (m, p, d) in zip(mention_found, predictions, data_to_link):
+    if m:
+        entity_linking_dict[d['mention']] = p[0]
+
+print(entity_linking_dict)
+
+
+
 
 """
 (
@@ -55,37 +72,19 @@ with open(args.biencoder_config) as json_file:
     biencoder_params = json.load(json_file)
     biencoder_params["path_to_model"] = args.biencoder_model
 #biencoder = load_biencoder(biencoder_params)
-biencoder = torch.jit.load('biencoder.pt')
+biencoder = load_biencoder_inference(biencoder_params)
+
+cand_encs = torch.load('sample_input/cand_encs.pt')
+text_vecs = torch.load('sample_input/text_vecs.pt')
+
+model = biencoder
+inputs = [text_vecs, cand_encs]
+
+x=model(*inputs)
+#biencoder = torch.jit.load('biencoder.pt')
 
 crossencoder = None 
 crossencoder_params = None 
 
 models = biencoder, biencoder_params, crossencoder, crossencoder_params, candidate_encoding, title2id, id2title, id2text, wikipedia_id2local_id, faiss_indexer
 """
-models = main_dense.load_models(args, logger=None)
-
-biencoder, biencoder_params, crossencoder, crossencoder_params, candidate_encoding, title2id, id2title, id2text, wikipedia_id2local_id, faiss_indexer = models
-
-#https://github.com/pytorch/pytorch/issues/41277
-
-data_to_link = [ {
-                    "id": 0,
-                    "label": "unknown",
-                    "label_id": -1,
-                    "context_left": "".lower(),
-                    "mention": "Shakespeare".lower(),
-                    "context_right": "'s account of the Roman general Julius Caesar's murder by his friend Brutus is a meditation on duty.".lower(),
-                },
-                {
-                    "id": 1,
-                    "label": "unknown",
-                    "label_id": -1,
-                    "context_left": "Shakespeare's account of the Roman general".lower(),
-                    "mention": "Julius Caesar".lower(),
-                    "context_right": "'s murder by his friend Brutus is a meditation on duty.".lower(),
-                }
-                ]
-
-
-_, _, _, _, _, predictions, scores, = main_dense.run(args, None, *models, test_data=data_to_link, REL_filter=True)
-print(predictions)

@@ -28,6 +28,11 @@ def load_biencoder(params):
     biencoder = BiEncoderRanker(params)
     return biencoder
 
+def load_biencoder_inference(params):
+    # Init model
+    biencoder = BiEncoderRankerInference(params)
+    return biencoder
+
 
 class BiEncoderModule(torch.nn.Module):
     def __init__(self, params):
@@ -83,9 +88,9 @@ class BiEncoderRanker(torch.nn.Module):
         self.NULL_IDX = 0
         self.START_TOKEN = "[CLS]"
         self.END_TOKEN = "[SEP]"
-        self.tokenizer = BertTokenizer.from_pretrained(
-            params["bert_model"], do_lower_case=params["lowercase"]
-        )
+        #self.tokenizer = BertTokenizer.from_pretrained(
+        #    params["bert_model"], do_lower_case=params["lowercase"]
+        #)
         # init model
         self.build_model()
         model_path = params.get("path_to_model", None)
@@ -219,6 +224,22 @@ class BiEncoderRanker(torch.nn.Module):
             # TODO: add parameters?
             loss = loss_fct(scores, label_input)
         return loss, scores
+
+
+class BiEncoderRankerInference(BiEncoderRanker):
+    def __init__(self, params, shared=None):
+        BiEncoderRanker.__init__(self, params, shared)
+
+    def forward(
+        self,
+        text_vecs,
+        cand_encs,  # pre-computed candidate encoding.
+    ):
+        
+        return self.score_candidate_inference(
+            text_vecs,
+            cand_encs
+        )
 
 
 def to_bert_input(token_idx, null_idx):
