@@ -256,7 +256,10 @@ def _run_biencoder(biencoder, dataloader, candidate_encoding, top_k=100, indexer
         )
     ##
     
-    biencoder.model.eval()
+    # move eval inside class intialization
+    #biencoder.model.eval()
+
+
     labels = []
     nns = []
     all_scores = []
