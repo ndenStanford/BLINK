@@ -229,6 +229,7 @@ class BiEncoderRanker(torch.nn.Module):
 class BiEncoderRankerInference(BiEncoderRanker):
     def __init__(self, params, shared=None):
         BiEncoderRanker.__init__(self, params, shared)
+        self.model.eval()
 
     def forward(
         self,

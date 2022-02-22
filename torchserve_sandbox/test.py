@@ -16,7 +16,7 @@ from nltk.tokenize import sent_tokenize, word_tokenize
 from utils import * 
 
 
-models_path = "model_store/"#"/home/ubuntu/BLINK/models/" # the path where you stored the BLINK models
+models_path = "model_support/"#"/home/ubuntu/BLINK/models/" # the path where you stored the BLINK models
 
 config = {
     "test_entities": None,

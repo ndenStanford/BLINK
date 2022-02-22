@@ -53,7 +53,7 @@ class BertEmbeddingHandler(BaseHandler, ABC):
         #self.model.eval()
         
         #models_path = "/home/ubuntu/BLINK/models/" # the path where you stored the BLINK models
-        print('before 3loading support materials')
+        print('before loading support materials')
         model_support_path = "/home/ubuntu/BLINK/torchserve_sandbox/model_support"#model_dir#'/opt/models/model-support'#
 
         config = {
