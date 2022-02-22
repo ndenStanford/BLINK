@@ -267,4 +267,5 @@ dmypy.json
 *.pt
 torchserve_sandbox/*.pt
 torchserve_sandbox/model_store/*.mar
+torchserve_sandbox/model_store/
 torchserve_sandbox/model_support
