@@ -15,6 +15,7 @@ import time
 
 print(torch_neuron.__version__)
 
+'''
 cand_encs = torch.load('sample_input/cand_encs_cpu.pt')
 text_vecs = torch.load('sample_input/text_vecs_cpu.pt')
 inputs = [text_vecs, cand_encs]
@@ -22,6 +23,7 @@ inputs = [text_vecs, cand_encs]
 module_loaded_neuron=torch.jit.load("blink_entity_linking_neuron.pt")
 x=module_loaded_neuron.forward(*inputs)
 print(x)
+'''
 
 
 models_path = "/home/ubuntu/BLINK/torchserve_sandbox/model_support"#'/opt/models/model-support/'#"model_store/" # the path where you stored the BLINK models

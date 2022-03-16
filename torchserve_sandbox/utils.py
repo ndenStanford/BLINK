@@ -1,6 +1,32 @@
 from REL.mention_detection_base import MentionDetectionBase
 from nltk.tokenize import sent_tokenize, word_tokenize
 
+import pickle
+import re
+
+with open('supporting_files/STOP_WORDS.pkl', 'rb') as f:
+    STOP_WORDS = pickle.load(f)
+
+def word_tokenize(word):
+    return word.split(" ")
+
+def stop_word_remover(words, lang):
+    if lang in STOP_WORDS:
+        cur_stopwords = STOP_WORDS[lang]
+        words = [word for word in words if word not in cur_stopwords]
+    
+    return words 
+
+def text_preprocessor(text, language):
+    text = text.lower()
+    text = re.sub(r'[^\w\s]', '', text)
+    text = text.rstrip()
+
+    #words = word_tokenize(text)
+    #words = stop_word_remover(words, language)
+    return text
+
+
 def find_candidates(mention):
     base_url = '/home/ubuntu/REL/data'
     wiki_version = 'wiki_2019'
@@ -20,6 +46,33 @@ def generate_sample(entities, sentences):
             mention = entity['entity_text']
             sentence_indexes = entity['sentence_indexes']
             entities_location_indexes = entity['sentence_indexes']
+            for sentence_index, entities_location_index in zip(sentence_indexes, entities_location_indexes):
+                context_left = sentences[sentence_index][:entities_location_index]
+                context_right = sentences[sentence_index][entities_location_index+len(mention):]
+
+                data_to_link += [{
+                    "id": _id,
+                    "label": "unknown",
+                    "label_id": -1,
+                    "context_left": context_left,
+                    "mention": mention,
+                    "context_right": context_right,
+                }]
+                
+                _id += 1
+                break
+
+    return data_to_link
+
+def generate_sample_es(entities, sentences):
+
+    data_to_link = []
+    _id = 0
+    for entity in entities:
+        if entity['entity_type'] in ['Organization', 'Person']:
+            mention = entity['mentions'][0]
+            sentence_indexes, entities_location_indexes = _sentence_indexes(mention, sentences)
+
             for sentence_index, entities_location_index in zip(sentence_indexes, entities_location_indexes):
                 context_left = sentences[sentence_index][:entities_location_index]
                 context_right = sentences[sentence_index][entities_location_index+len(mention):]

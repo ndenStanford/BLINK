@@ -3,7 +3,7 @@ import json
 import sys
 import logging
 
-import torch, torch_neuron
+import torch
 from transformers import AutoTokenizer
 from abc import ABC
 from ts.torch_handler.base_handler import BaseHandler
@@ -14,11 +14,10 @@ import torch
 import numpy as np 
 
 import time
-from nltk.tokenize import sent_tokenize, word_tokenize
 
 
 # one core per worker
-os.environ['NEURONCORE_GROUP_SIZES'] = '1'
+# os.environ['NEURONCORE_GROUP_SIZES'] = '1'
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +30,7 @@ class BertEmbeddingHandler(BaseHandler, ABC):
         self.initialized = False
 
     def initialize(self, ctx):
+        print('starting initializing')
         self.manifest = ctx.manifest
         properties = ctx.system_properties
         self.device = 'cpu'
@@ -46,6 +46,7 @@ class BertEmbeddingHandler(BaseHandler, ABC):
         self.batch_size = config['batch_size']
         #self.classes = ['not paraphrase', 'paraphrase']
 
+        print('starting loading model')
         biencoder = torch.jit.load(model_pt_path)
         logger.debug(f'Model loaded from {model_dir}')
         print('model loaded')
@@ -97,6 +98,8 @@ class BertEmbeddingHandler(BaseHandler, ABC):
 
         self.models = biencoder, biencoder_params, crossencoder, crossencoder_params, candidate_encoding, title2id, id2title, id2text, wikipedia_id2local_id, faiss_indexer
         self.initialized = True
+
+        print('end initializing')
 
 
     def preprocess(self, input_data):

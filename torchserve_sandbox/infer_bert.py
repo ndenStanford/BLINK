@@ -15,7 +15,7 @@ from utils import *
 with open('config.json') as fp:
     config = json.load(fp)
 max_length = config['max_length']
-batch_size = config['batch_size']
+batch_size = 1#config['batch_size']
 name = 'blink_entity_linking'
 
 
@@ -52,27 +52,6 @@ print(predictions)
 end = time.time()
 print(end - start)
 
-total_time = 0
-for d in data:
-    start = time.time()
-    response = requests.post(url, json=[d])
-    predictions = response.json()
-    print(predictions)
-    end = time.time()
-    total_time += end - start
-print(total_time)
-
-
-'''
-print('---------- entities ----------')
-for e in entities['entities']:
-    if e['entity_type'] in ['org', 'per']:
-        print(e['entity_text'])
-
-print('---------- predictions ----------')
-for p in predictions:
-    print(p[0:3])
-'''
 
 
 """
